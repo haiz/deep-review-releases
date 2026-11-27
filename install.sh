@@ -131,18 +131,18 @@ app_running() {
 quit_running_app() {
     local answer=""
     if ! { : </dev/tty; } 2>/dev/null; then
-        error "${APP_NAME} đang chạy và không có terminal để hỏi bạn. Hãy thoát ${APP_NAME} rồi chạy lại lệnh cài đặt."
+        error "${APP_NAME} is running and there is no terminal to ask you. Quit ${APP_NAME} and run the install command again."
     fi
-    printf '%b' "${YELLOW}==>${NC} ${APP_NAME} đang chạy. Thoát ${APP_NAME} để cài bản mới? Lượt đang chạy sẽ bị huỷ và chạy lại từ đầu sau khi app mở lại. [y/N] " >/dev/tty
+    printf '%b' "${YELLOW}==>${NC} ${APP_NAME} is running. Quit ${APP_NAME} to install the new version? The running turn will be cancelled and rerun from the start after the app reopens. [y/N] " >/dev/tty
     read -r answer </dev/tty || answer=""
     case "$answer" in
         y|Y|yes|YES|Yes) ;;
-        *) error "Đã dừng cài đặt: ${APP_NAME} vẫn đang chạy. Hãy thoát ${APP_NAME} rồi chạy lại lệnh cài đặt." ;;
+        *) error "Installation stopped: ${APP_NAME} is still running. Quit ${APP_NAME} and run the install command again." ;;
     esac
     osascript -e "quit app \"${APP_NAME}\"" >/dev/null 2>&1 || true
     local i=0
     while app_running "$1" && [[ "$i" -lt 60 ]]; do sleep 0.5; i=$((i + 1)); done
-    ! app_running "$1" || error "${APP_NAME} chưa thoát. Hãy thoát ${APP_NAME} rồi chạy lại lệnh cài đặt."
+    ! app_running "$1" || error "${APP_NAME} did not quit. Quit ${APP_NAME} and run the install command again."
 }
 
 # Swaps the staged bundle `$1` into `$2`, keeping the old one until the new one is in place so that a
@@ -169,62 +169,62 @@ replace_app() {
 TMPDIR_PATH=""
 
 main() {
-    [[ "$(uname -s)" == "Darwin" ]] || error "${APP_NAME} chỉ hỗ trợ macOS."
+    [[ "$(uname -s)" == "Darwin" ]] || error "${APP_NAME} supports macOS only."
     local macos_version
     macos_version="$(sw_vers -productVersion)"
     [[ "${macos_version%%.*}" -ge "$MIN_MACOS_MAJOR" ]] \
-        || error "Cần macOS ${MIN_MACOS_MAJOR} trở lên. Máy bạn đang dùng macOS ${macos_version}."
+        || error "macOS ${MIN_MACOS_MAJOR} or later is required. This Mac runs macOS ${macos_version}."
 
-    info "Đang cài đặt ${APP_NAME}..."
+    info "Installing ${APP_NAME}..."
 
     # --- Prerequisites ---
     local node
     node="$(find_node)" \
-        || error "Không tìm thấy Node ${MIN_NODE_MAJOR} trở lên. Cài bằng lệnh: brew install node"
+        || error "Node ${MIN_NODE_MAJOR} or later not found. Install it with: brew install node"
     info "Node: ${node}"
     find_chrome >/dev/null \
-        || error "Không tìm thấy Google Chrome trong /Applications hoặc ~/Applications. Tải tại: https://www.google.com/chrome/"
+        || error "Google Chrome not found in /Applications or ~/Applications. Download it from: https://www.google.com/chrome/"
     [[ -e "$HOME/Library/Preferences/com.claude-dashboard.app.plist" ]] \
-        || warn "Chưa thấy claude-dashboard. Các bước ChatGPT vẫn chạy được, nhưng các bước dùng Claude sẽ báo lỗi cho đến khi bạn cài và đăng nhập claude-dashboard."
+        || warn "claude-dashboard not found. ChatGPT turns still run, but Claude turns will fail until you install claude-dashboard and log in."
 
     # --- Latest release ---
-    info "Đang lấy bản phát hành mới nhất..."
+    info "Fetching the latest release..."
     local release_json version url
     release_json="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest")" \
-        || error "Không lấy được thông tin bản phát hành. Hãy kiểm tra kết nối Internet."
+        || error "Could not fetch release information. Check your Internet connection."
     version="$(echo "$release_json" | grep -o '"tag_name": *"[^"]*"' | head -1 | cut -d'"' -f4 || true)"
     url="$(release_asset_url "$release_json" "${APP_BUNDLE}.zip")"
-    [[ -n "$url" ]] || error "Bản phát hành mới nhất không có tệp ${APP_BUNDLE}.zip."
-    info "Tìm thấy ${APP_NAME} ${version}"
+    [[ -n "$url" ]] || error "The latest release has no ${APP_BUNDLE}.zip file."
+    info "Found ${APP_NAME} ${version}"
 
     # --- Download and unpack into a temp dir, nothing in INSTALL_DIR yet ---
     TMPDIR_PATH="$(mktemp -d)"
     trap 'rm -rf "$TMPDIR_PATH"' EXIT
-    info "Đang tải về..."
+    info "Downloading..."
     curl -fSL --progress-bar -o "${TMPDIR_PATH}/${APP_BUNDLE}.zip" "$url" \
-        || error "Tải về thất bại."
+        || error "Download failed."
     ditto -xk "${TMPDIR_PATH}/${APP_BUNDLE}.zip" "${TMPDIR_PATH}/stage" \
-        || error "Không giải nén được tệp tải về."
+        || error "Could not unzip the download."
     [[ -d "${TMPDIR_PATH}/stage/${APP_BUNDLE}" ]] \
-        || error "Tệp tải về không chứa ${APP_BUNDLE}."
+        || error "The download does not contain ${APP_BUNDLE}."
 
     # --- Install ---
     local target="${INSTALL_DIR}/${APP_BUNDLE}"
     if app_running "$target"; then quit_running_app "$target"; fi
 
-    info "Đang cài vào ${INSTALL_DIR}..."
+    info "Installing into ${INSTALL_DIR}..."
     local incoming="${INSTALL_DIR}/.${APP_BUNDLE}.new"
     rm -rf "$incoming"
     ditto "${TMPDIR_PATH}/stage/${APP_BUNDLE}" "$incoming" \
-        || { rm -rf "$incoming"; error "Không chép được ứng dụng vào ${INSTALL_DIR}. Nếu thiếu quyền, hãy chạy lại bằng tài khoản quản trị."; }
+        || { rm -rf "$incoming"; error "Could not copy the app into ${INSTALL_DIR}. If permission is missing, run again from an administrator account."; }
     xattr -cr "$incoming" 2>/dev/null || true
     replace_app "$incoming" "$target" \
-        || { rm -rf "$incoming"; error "Không thay được ${target}. Bản cũ (nếu có) được giữ nguyên."; }
+        || { rm -rf "$incoming"; error "Could not replace ${target}. The old version (if any) was kept."; }
 
     echo ""
-    ok "Đã cài ${APP_NAME} ${version} thành công."
+    ok "Installed ${APP_NAME} ${version}."
     echo ""
-    echo "  Mở ứng dụng:  open ${target}"
+    echo "  Open the app:  open ${target}"
     echo ""
 }
 
