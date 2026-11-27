@@ -1,30 +1,30 @@
 # Deep Review
 
-Ứng dụng macOS để review và nâng cấp tài liệu theo nhiều lượt, luân phiên giữa Claude và ChatGPT.
+A macOS app that reviews and upgrades a document over many rounds, alternating between Claude and ChatGPT.
 
-Repo này chỉ chứa trình cài đặt và các bản phát hành (tệp `DeepReview.app.zip` trong mục Releases).
+This repo holds only the installer and the releases (the `DeepReview.app.zip` file under Releases).
 
-## Cài đặt
+## Install
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/haiz/deep-review-releases/main/install.sh | bash
 ```
 
-Trình cài đặt kiểm tra điều kiện, tải bản mới nhất, cài vào `/Applications/DeepReview.app`, rồi in lệnh để mở ứng dụng:
+The installer checks the requirements, downloads the latest release, installs it into `/Applications/DeepReview.app`, then prints the command to open the app:
 
 ```bash
 open /Applications/DeepReview.app
 ```
 
-Chạy lại cùng lệnh để cập nhật. Nếu Deep Review đang chạy, trình cài đặt sẽ hỏi trước khi thoát nó.
+Run the same command again to update. If Deep Review is running, the installer asks before quitting it.
 
-## Yêu cầu
+## Requirements
 
-- macOS 15 trở lên (Apple Silicon hoặc Intel).
-- Node 22 trở lên. Cài bằng `brew install node`, hoặc dùng nvm, fnm, volta.
-- Google Chrome trong `/Applications` hoặc `~/Applications`: https://www.google.com/chrome/
-- claude-dashboard, đã đăng nhập ít nhất một tài khoản Claude (khuyến nghị): thiếu thì các bước ChatGPT vẫn chạy, nhưng các bước dùng Claude sẽ báo lỗi.
+- macOS 15 or later (Apple Silicon or Intel).
+- Node 22 or later. Install with `brew install node`, or use nvm, fnm or volta.
+- Google Chrome in `/Applications` or `~/Applications`: https://www.google.com/chrome/
+- claude-dashboard with at least one Claude account logged in (recommended): without it ChatGPT turns still run, but Claude turns fail.
 
-## Lưu ý
+## Notes
 
-Ứng dụng chỉ được ký ad-hoc. Trình cài đặt đã gỡ thuộc tính cách ly, nhưng nếu macOS vẫn chặn ở lần mở đầu tiên, vào System Settings > Privacy & Security > Open Anyway.
+The app is only ad-hoc signed. The installer clears the quarantine attribute, but if macOS still blocks the first launch, go to System Settings > Privacy & Security > Open Anyway.
